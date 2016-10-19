@@ -1,8 +1,19 @@
 #include <stdlib.h>
-#include "packet_interface.h"
 #include <netinet/in.h>
 #include <memory.h>
 #include <unistd.h>
+#include <stdio.h>
+#include "packet_interface.h"
+
+
+void main(int argc, char** argv){
+    pkt_t* oui = pkt_new();
+    pkt_set_window(oui,3);
+    size_t size1 = sizeof(pkt_get_window(oui));
+    pkt_set_seqnum(oui,3);
+    size_t size2 = sizeof(pkt_get_type(oui));
+    printf("oui");
+}
 
 struct __attribute__((__packed__)) pkt {
      ptypes_t type : 3;
@@ -11,7 +22,7 @@ struct __attribute__((__packed__)) pkt {
     uint32_t timestamp;
     uint16_t length : 16;
     char *payload;
-    uint32_t crc;
+    uint32_t crc : 32;
 };
 
 pkt_t* pkt_new()
@@ -28,12 +39,14 @@ void pkt_del(pkt_t *pkt)
 
 pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 {
+    //TODO : Need to encode stuff en shift bits to make them round that's all. Do not forget to put window and type together to make an eight bit (look at git for more info)
     read(0,(void*)data, sizeof(data));
     return PKT_OK;
 }
 
 pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 {
+    //TODO : Decode with taking each byte from the buf en shifting them if they are not round
     write(buf,(void*)pkt->type,len);
     return PKT_OK;
 }
