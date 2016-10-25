@@ -1,11 +1,19 @@
 #include "reciever.h"
 
 const char* file_name;
-const char* host_name;
-int port; //soit le numéro du port sur lequel écouter, soit -1 pour écouter sur toutes les interfaces)
-
+char* host_name;
+int port; //soit le numéro du port sur lequel écouter, soit -1 pour écouter sur toutes les interfaces
+int fd_out; //file descriptor, 0 si STDOUT, ou un nouveau file descriptor si un fichier a été spécifié
+void init()
+{
+	host_name = malloc(40*(sizeof(char)));
+	strcpy(host_name,"::");
+	file_name = NULL;
+	port = 0;
+}
 int main(int argc, const char* argv[])
 {	
+	init();
 	int i;
 	for(i = 1;i<argc;i++)
 	{
@@ -22,7 +30,7 @@ int main(int argc, const char* argv[])
 				return 1;
 			}
 		}
-		else if (strcmp("::1",argv[i])==0)
+		else if (strcmp("::1",argv[i])==0 || strcmp("::",argv[i])==0)
 		{
 			port = -1;
 		}
@@ -31,7 +39,7 @@ int main(int argc, const char* argv[])
 			if(atoi(argv[i])!=0) port = atoi(argv[i]);
 			else
 			{
-				host_name = argv[i]; 
+				strcpy(host_name,argv[i]); 
 			}
 		}
 	}
@@ -45,4 +53,23 @@ int main(int argc, const char* argv[])
 		fprintf(stderr,"Nom du host inexistant ou invalide !\n");
 		return 1;
 	}
+	struct sockaddr_in6 *serv_addr;
+	serv_addr = malloc(sizeof(*serv_addr));
+	const char *addr = real_address(host_name, serv_addr);
+	if(addr != NULL) fprintf(stderr,"Erreur en convertissant le nom du host en une adresse IPV6 réelle\n");
+	
+	//int socket = create_socket(serv_addr, port, NULL,0);
+	//if(socket == -1) return 1;
+	int backup;
+	int fd;
+	if(file_name != NULL)
+	{
+		chmod(file_name,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+		fd = open(file_name,O_RDWR|O_CREAT, NULL);
+		backup = dup(fileno(stdout));
+		fd_out = dup2(fd, fileno(stdout));
+	}
+	
+	
+	
 }
