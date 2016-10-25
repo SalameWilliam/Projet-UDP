@@ -78,7 +78,7 @@ int create_socket(struct sockaddr_in6 *source_addr,
 		}
 		int test_bind = bind(udp_socket,(struct sockaddr *) source_addr, sizeof(*source_addr));
 		if(test_bind!=0){
-			perror("ERROR: unable to do 'bind()'\n");
+			perror(errno);
 			return -1;
 		}	
 	}

@@ -1,9 +1,11 @@
+#include <err.h>
 #include "reciever.h"
 
 const char* file_name;
 char* host_name;
 int port; //soit le numéro du port sur lequel écouter, soit -1 pour écouter sur toutes les interfaces
 int fd_out; //file descriptor, 0 si STDOUT, ou un nouveau file descriptor si un fichier a été spécifié
+
 void init()
 {
 	host_name = malloc(40*(sizeof(char)));
@@ -11,6 +13,21 @@ void init()
 	file_name = NULL;
 	port = 0;
 }
+
+int receive_datagram(int socket,struct sockaddr_in6 *serv_addr){
+    char buffer[600];
+    socklen_t src_addr_len = sizeof(serv_addr);
+    ssize_t count=recvfrom(socket,buffer,sizeof(buffer),0,(struct sockaddr*)&serv_addr,&src_addr_len);
+    if (count==-1) {
+        fprintf(stderr,"Erreur lors de la reception du paquet\n");
+        return -1;
+    } else if (count==sizeof(buffer)) {
+        warn("datagram too large for buffer: truncated");
+    } else {
+        printf(buffer);
+    }
+}
+
 int main(int argc, const char* argv[])
 {	
 	init();
@@ -53,14 +70,15 @@ int main(int argc, const char* argv[])
 		fprintf(stderr,"Nom du host inexistant ou invalide !\n");
 		return 1;
 	}
+
 	struct sockaddr_in6 *serv_addr;
 	serv_addr = malloc(sizeof(*serv_addr));
 	const char *addr = real_address(host_name, serv_addr);
 	if(addr != NULL) fprintf(stderr,"Erreur en convertissant le nom du host en une adresse IPV6 réelle\n");
-	
-	//int socket = create_socket(serv_addr, port, NULL,0);
-	//if(socket == -1) return 1;
-	int backup;
+
+    int backup;
+	int socket = create_socket(serv_addr, port, NULL,0);
+	if(socket == -1) return 1;
 	int fd;
 	if(file_name != NULL)
 	{
@@ -69,7 +87,11 @@ int main(int argc, const char* argv[])
 		backup = dup(fileno(stdout));
 		fd_out = dup2(fd, fileno(stdout));
 	}
-	
-	
-	
+
+    printf("Waiting for data...");
+    while(1 == 1) {
+        receive_datagram(socket, serv_addr);
+    }
+
 }
+
